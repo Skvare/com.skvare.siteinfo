@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<menu>
+  <item>
+    <path>civicrm/siteinfo/status</path>
+    <page_callback>CRM_Siteinfo_Page_Report</page_callback>
+    <title>Site Status</title>
+    <access_callback>1</access_callback>
+  </item>
+</menu>

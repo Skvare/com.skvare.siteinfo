@@ -166,3 +166,21 @@ function siteinfo_civicrm_themes(&$themes) {
 //  ]);
 //  _siteinfo_civix_navigationMenu($menu);
 //}
+
+/**
+ * Implements hook_civicrm_navigationMenu().
+ *
+ * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_navigationMenu
+ */
+function siteinfo_civicrm_navigationMenu(&$menu) {
+  _siteinfo_civix_insert_navigation_menu($menu, 'Administer/System Settings', [
+    'label' => E::ts('Site Info Setting'),
+    'name' => 'siteinfo_setting',
+    'url' => CRM_Utils_System::url('civicrm/siteinfo/setting', 'reset=1', TRUE),
+    'permission' => 'administer CiviCRM',
+    'operator' => 'OR',
+    'separator' => 0,
+  ]);
+  _siteinfo_civix_navigationMenu($menu);
+}
+

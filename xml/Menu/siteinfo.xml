@@ -6,4 +6,10 @@
     <title>Site Status</title>
     <access_callback>1</access_callback>
   </item>
+  <item>
+    <path>civicrm/siteinfo/setting</path>
+    <page_callback>CRM_Siteinfo_Form_Setting</page_callback>
+    <title>Site info Setting</title>
+    <access_arguments>administer CiviCRM</access_arguments>
+  </item>
 </menu>

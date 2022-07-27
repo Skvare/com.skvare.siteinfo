@@ -96,6 +96,17 @@ class CRM_Siteinfo_Page_Report extends CRM_Core_Page {
       else {
         $outputArray['cmsVersion']['title'] = 'NA';
       }
+      $versionInfo = new CRM_Siteinfo_DrupalVersionCheck();
+      [$isUpgradeRequire, $isSecurityRelease, $recommendedVersion] =
+        $versionInfo->checkVersion(CIVICRM_UF, $outputArray['cmsVersion']['title']);
+      if ($isUpgradeRequire) {
+        $outputArray['cmsVersion']['severity'] = 'error';
+        $outputArray['cmsVersion']['message'] = 'Upgrade Drupal to ' . $recommendedVersion;
+        // @TODO for secure version release.
+        if ($isSecurityRelease) {
+          $outputArray['civicrmDbVersioncmsVersion']['severity'] = 'error';
+        }
+      }
     }
     CRM_Utils_JSON::output($outputArray);
     CRM_Utils_System::civiExit();

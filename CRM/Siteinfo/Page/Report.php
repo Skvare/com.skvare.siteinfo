@@ -104,7 +104,7 @@ class CRM_Siteinfo_Page_Report extends CRM_Core_Page {
         $outputArray['cmsVersion']['message'] = 'Upgrade Drupal to ' . $recommendedVersion;
         // @TODO for secure version release.
         if ($isSecurityRelease) {
-          $outputArray['civicrmDbVersioncmsVersion']['severity'] = 'error';
+          $outputArray['cmsVersion']['severity'] = 'error';
         }
       }
     }

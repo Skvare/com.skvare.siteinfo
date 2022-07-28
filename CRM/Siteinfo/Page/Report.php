@@ -89,21 +89,22 @@ class CRM_Siteinfo_Page_Report extends CRM_Core_Page {
       ];
       if (CIVICRM_UF == 'Drupal') {
         $outputArray['cmsVersion']['title'] = VERSION;
+        $outputArray['cmsType']['title'] = 'Drupal-' . intval(VERSION);
       }
       elseif (CIVICRM_UF == 'Drupal8') {
         $outputArray['cmsVersion']['title'] = \Drupal::VERSION;
+        $outputArray['cmsType']['title'] = 'Drupal-' . intval(\Drupal::VERSION);
       }
       else {
         $outputArray['cmsVersion']['title'] = 'NA';
       }
       $versionInfo = new CRM_Siteinfo_DrupalVersionCheck();
-      [$isUpgradeRequire, $isSecurityRelease, $recommendedVersion] =
-        $versionInfo->checkVersion(CIVICRM_UF, $outputArray['cmsVersion']['title']);
-      if ($isUpgradeRequire) {
-        $outputArray['cmsVersion']['severity'] = 'error';
-        $outputArray['cmsVersion']['message'] = 'Upgrade Drupal to ' . $recommendedVersion;
+      $projectStatus = $versionInfo->checkVersion(CIVICRM_UF, $outputArray['cmsVersion']['title']);
+      if ($projectStatus['isUpgradeRequire']) {
+        $outputArray['cmsVersion']['severity'] = 'warning';
+        $outputArray['cmsVersion']['message'] = $projectStatus['message'];
         // @TODO for secure version release.
-        if ($isSecurityRelease) {
+        if ($projectStatus['isSecurityRelease']) {
           $outputArray['cmsVersion']['severity'] = 'error';
         }
       }

@@ -94,11 +94,51 @@ class CRM_Siteinfo_DrupalVersionCheck {
     else {
       $latestVersion = $projects['drupal']['latest_version'];
     }
-    if (version_compare($version, $latestVersion) < 0) {
-      return [TRUE, FALSE, $latestVersion];
+    $isSecurityRelease = FALSE;
+    $message = '';
+    foreach ($projects[$project]['security updates'] as $securityupdate) {
+      if (version_compare($version, $securityupdate['version']) < 0) {
+        $isSecurityRelease = TRUE;
+        $message .= PHP_EOL . 'Security update ' . $securityupdate['version'] . ' (' . date('Y-M-d', $securityupdate['date']) . ' )';
+      }
+    }
+    $suggestedVersions = $this->getMoreRecommendedVersion($version,
+      $versionListDetail);
+    foreach ($suggestedVersions as $suggestedVersion) {
+      $message .= PHP_EOL . 'Suggested version ' .
+        $available['releases'][$suggestedVersion]['version'] . ' (' .
+        date('Y-M-d', $available['releases'][$suggestedVersion]['date']) . ' )';
+    }
+    $projectStatus = [];
+    if (version_compare($version, $latestVersion) < 0 || count
+      ($suggestedVersions) > 1) {
+      $projectStatus = [
+        'isUpgradeRequire' => TRUE,
+        'isSecurityRelease' => $isSecurityRelease,
+        'latestVersion' => $latestVersion,
+        'message' => $message];
+
+      return $projectStatus;
     }
 
-    return [FALSE, FALSE, $latestVersion];
+    $projectStatus = [
+      'isUpgradeRequire' => FALSE,
+      'isSecurityRelease' => FALSE,
+      'latestVersion' => $latestVersion,
+      'message' => $message];
+
+    return $projectStatus;
+  }
+
+  public function getMoreRecommendedVersion($version, $versionListDetail) {
+    $versionNumberInt = intval($version);
+    unset($versionListDetail[$versionNumberInt]);
+    $recommendedVersion = [];
+    foreach ($versionListDetail as $versionList) {
+      $recommendedVersion[] = $versionList[0];
+    }
+
+    return $recommendedVersion;
   }
 
   /**

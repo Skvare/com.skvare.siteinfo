@@ -112,6 +112,9 @@ class CRM_Siteinfo_DrupalVersionCheck {
     $projectStatus = [];
     if (version_compare($version, $latestVersion) < 0 || count
       ($suggestedVersions) > 1) {
+      if (empty($message) && version_compare($version, $latestVersion) < 0) {
+        $message = 'Drupal upgrade to ' . $latestVersion;
+      }
       $projectStatus = [
         'isUpgradeRequire' => TRUE,
         'isSecurityRelease' => $isSecurityRelease,
@@ -134,8 +137,10 @@ class CRM_Siteinfo_DrupalVersionCheck {
     $versionNumberInt = intval($version);
     unset($versionListDetail[$versionNumberInt]);
     $recommendedVersion = [];
-    foreach ($versionListDetail as $versionList) {
-      $recommendedVersion[] = $versionList[0];
+    foreach ($versionListDetail as $primaryVersion => $versionList) {
+      if ($primaryVersion > $versionNumberInt) {
+        $recommendedVersion[] = $versionList[0];
+      }
     }
 
     return $recommendedVersion;

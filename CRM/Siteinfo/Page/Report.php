@@ -100,10 +100,9 @@ class CRM_Siteinfo_Page_Report extends CRM_Core_Page {
       }
       $versionInfo = new CRM_Siteinfo_DrupalVersionCheck();
       $projectStatus = $versionInfo->checkVersion(CIVICRM_UF, $outputArray['cmsVersion']['title']);
+      $outputArray['cmsVersion']['message'] = $projectStatus['message'];
       if ($projectStatus['isUpgradeRequire']) {
         $outputArray['cmsVersion']['severity'] = 'warning';
-        $outputArray['cmsVersion']['message'] = $projectStatus['message'];
-        // @TODO for secure version release.
         if ($projectStatus['isSecurityRelease']) {
           $outputArray['cmsVersion']['severity'] = 'error';
         }

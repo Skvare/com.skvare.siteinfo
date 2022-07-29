@@ -101,12 +101,15 @@ class CRM_Siteinfo_Page_Report extends CRM_Core_Page {
       $versionInfo = new CRM_Siteinfo_DrupalVersionCheck();
       $projectStatus = $versionInfo->checkVersion(CIVICRM_UF, $outputArray['cmsVersion']['title']);
       $outputArray['cmsVersion']['message'] = $projectStatus['message'];
+      $outputArray['cmsVersion']['severity'] = $projectStatus['severity'];
+      /*
       if ($projectStatus['isUpgradeRequire']) {
         $outputArray['cmsVersion']['severity'] = 'warning';
         if ($projectStatus['isSecurityRelease']) {
           $outputArray['cmsVersion']['severity'] = 'error';
         }
       }
+      */
     }
     CRM_Utils_JSON::output($outputArray);
     CRM_Utils_System::civiExit();

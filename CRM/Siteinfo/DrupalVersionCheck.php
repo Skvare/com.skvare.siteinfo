@@ -88,6 +88,7 @@ class CRM_Siteinfo_DrupalVersionCheck {
       $versionListDetail[$versionNumberInt][] = $versionNumber;
     }
     $this->calculateProjectUpdateStatus($projects[$project], $available);
+    //echo '<pre>-----'; print_r($projects); echo '</pre>';
     if (in_array($drupalType, ['Drupal8', 'Drupal9'])) {
       $latestVersion = $projects['drupal']['latest_version'];
     }
@@ -95,40 +96,68 @@ class CRM_Siteinfo_DrupalVersionCheck {
       $latestVersion = $projects['drupal']['latest_version'];
     }
     $isSecurityRelease = FALSE;
-    $message = '';
+    $severity = 'info';
+    $message = [];
     foreach ($projects[$project]['security updates'] as $securityupdate) {
+      //echo '<pre> $securityupdate: ';print_r($securityupdate);echo '</pre>';
       if (version_compare($version, $securityupdate['version']) < 0) {
+        /*
+        echo '<pre>intval version_patch: ';print_r(intval($securityupdate['version_patch']));echo '</pre>';
+        echo '<pre>intval $version: ';print_r(intval($available['releases'][$version]['version_patch']));echo '</pre>';
+        */
+        $message[$securityupdate['version']] = PHP_EOL . 'Security update ' . $securityupdate['version']
+          . ' (' . date('Y-M-d', $securityupdate['date']) . ' )';
+        if (in_array($drupalType, ['Drupal8', 'Drupal9'])) {
+          // If Version is 9.4.3, then version_patch = 94.3
+          // security only be check withing same range like 9.4.3 -> 9.4.4 ->
+          // 9.4.5
+          if (version_compare(intval($securityupdate['version_patch']), intval
+          ($available['releases'][$version]['version_patch']), '>')) {
+            //echo '<pre>intval $version: ';echo 'Skipping-----';echo '</pre>';
+            continue;
+          }
+        }
         $isSecurityRelease = TRUE;
-        $message .= PHP_EOL . 'Security update ' . $securityupdate['version'] . ' (' . date('Y-M-d', $securityupdate['date']) . ' )';
+        $severity = 'error';
       }
     }
     $suggestedVersions = $this->getMoreRecommendedVersion($version,
       $versionListDetail);
+    $messageSuggested = [];
     foreach ($suggestedVersions as $suggestedVersion) {
-      $message .= PHP_EOL . 'Suggested version ' .
+      $messageSuggested[] = PHP_EOL . 'Suggested version ' .
         $available['releases'][$suggestedVersion]['version'] . ' (' .
         date('Y-M-d', $available['releases'][$suggestedVersion]['date']) . ' )';
     }
     $projectStatus = [];
-    if (version_compare($version, $latestVersion) < 0 || count
-      ($suggestedVersions) > 1) {
-      if (empty($message) && version_compare($version, $latestVersion) < 0) {
-        $message = 'Drupal upgrade to ' . $latestVersion;
+    if (version_compare($version, $latestVersion) < 0 || count($messageSuggested) > 1) {
+      if (version_compare($version, $latestVersion) < 0) {
+        $message[$latestVersion] = 'Drupal upgrade to ' . $latestVersion . ' (' .
+          date('Y-M-d', $available['releases'][$latestVersion]['date']) . ' ).';
+        if (!$isSecurityRelease) {
+          $severity = 'warning';
+        }
       }
+      krsort($message);
+      $message = array_merge($message, $messageSuggested);
       $projectStatus = [
         'isUpgradeRequire' => TRUE,
         'isSecurityRelease' => $isSecurityRelease,
         'latestVersion' => $latestVersion,
-        'message' => $message];
+        'severity' => $severity,
+        'message' => implode(", ", $message),
+      ];
 
       return $projectStatus;
     }
-
+    $message = array_merge($message, $messageSuggested);
     $projectStatus = [
       'isUpgradeRequire' => FALSE,
       'isSecurityRelease' => FALSE,
       'latestVersion' => $latestVersion,
-      'message' => $message];
+      'severity' => $severity,
+      'message' => implode(", ", $message),
+    ];
 
     return $projectStatus;
   }

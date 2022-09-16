@@ -23,10 +23,46 @@ class CRM_Siteinfo_Page_Report extends CRM_Core_Page {
         $isError = TRUE;
       }
     }
-    $outputArray = [];
+    $projects = $outputArray = [];
     CRM_Utils_System::setTitle(E::ts('Status Report'));
-
     if (!$isError) {
+      if (CIVICRM_UF == 'Drupal8') {
+        $projects = \Drupal::service('update.manager')->getProjects();
+        unset($projects['drupal'], $projects['civicrm']);
+
+      }
+      else {
+        $module_data = system_rebuild_module_data();
+        require_once 'modules/update/update.compare.inc';
+        _update_process_info_list($projects, $module_data, 'module', TRUE);
+        unset($projects['drupal'], $projects['civicrm']);
+      }
+      $drupalContribModule = [];
+      $outputArray['cmsModules'] = [
+        'name' => 'cmsModules',
+        'message' => '',
+        'level' => 1,
+        'severity' => 'info',
+        'title' => 'Modules',
+      ];
+      $drupalContribModuleSeverity = 'info';
+      foreach ($projects as $project) {
+        $versionInfo = new CRM_Siteinfo_DrupalVersionCheck();
+        $projectStatus = $versionInfo->checkVersion($project['name'], $project['info']['name'],CIVICRM_UF, $project['info']['version']);
+        if ($projectStatus['isUpgradeRequire'] && !empty($projectStatus['message'])) {
+          $drupalContribModule[$project['name']] = $projectStatus['message'];
+          if ($drupalContribModuleSeverity != 'error') {
+            $drupalContribModuleSeverity = 'warning';
+          }
+        }
+        if ($projectStatus['isSecurityRelease']) {
+          $drupalContribModuleSeverity = 'error';
+        }
+      }
+      if (!empty($drupalContribModule)) {
+        $outputArray['cmsModules']['severity'] = $drupalContribModuleSeverity;
+        $outputArray['cmsModules']['message'] = implode(",\n", $drupalContribModule);
+      }
       // Get the System Status details.
       $output = CRM_Utils_Check::checkStatus();
       foreach ($output as $messageObje) {
@@ -99,7 +135,7 @@ class CRM_Siteinfo_Page_Report extends CRM_Core_Page {
         $outputArray['cmsVersion']['title'] = 'NA';
       }
       $versionInfo = new CRM_Siteinfo_DrupalVersionCheck();
-      $projectStatus = $versionInfo->checkVersion(CIVICRM_UF, $outputArray['cmsVersion']['title']);
+      $projectStatus = $versionInfo->checkVersion('drupal', 'Drupal',CIVICRM_UF, $outputArray['cmsVersion']['title']);
       $outputArray['cmsVersion']['message'] = $projectStatus['message'];
       $outputArray['cmsVersion']['severity'] = $projectStatus['severity'];
       /*

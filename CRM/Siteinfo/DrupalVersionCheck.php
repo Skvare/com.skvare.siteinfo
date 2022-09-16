@@ -57,24 +57,24 @@ class CRM_Siteinfo_DrupalVersionCheck {
    */
   const UPDATE_MAX_FETCH_TIME = 30;
 
-  /*
+  /**
    * Functin to check drupal version status.
    *
+   * @param string $project
+   * @param string $projectLabel
    * @param $drupalType
    * @param $version
    * @return array
    */
-  function checkVersion($drupalType, $version) {
-    $project = 'drupal';
+  function checkVersion($project = 'drupal', $projectLabel = '', $drupalType, $version) {
     // Build current project details
-    $projects = $this->currentProject($version);
-
+    $projects = $this->currentProject($project, $version);
     // get the xml details for release details.
     if (in_array($drupalType, ['Drupal8', 'Drupal9'])) {
-      $url = 'https://updates.drupal.org/release-history/drupal/current';
+      $url = 'https://updates.drupal.org/release-history/' . $project . '/current';
     }
     else {
-      $url = 'https://updates.drupal.org/release-history/drupal/7.x';
+      $url = 'https://updates.drupal.org/release-history/' . $project . '/7.x';
     }
     $xml = $this->getXmlFromUrl($url);
     $available = $this->updateParseXml($xml);
@@ -90,10 +90,10 @@ class CRM_Siteinfo_DrupalVersionCheck {
     $this->calculateProjectUpdateStatus($projects[$project], $available);
     //echo '<pre>-----'; print_r($projects); echo '</pre>';
     if (in_array($drupalType, ['Drupal8', 'Drupal9'])) {
-      $latestVersion = $projects['drupal']['latest_version'];
+      $latestVersion = $projects[$project]['latest_version'];
     }
     else {
-      $latestVersion = $projects['drupal']['latest_version'];
+      $latestVersion = $projects[$project]['latest_version'];
     }
     $isSecurityRelease = FALSE;
     $severity = 'info';
@@ -132,7 +132,8 @@ class CRM_Siteinfo_DrupalVersionCheck {
     $projectStatus = [];
     if (version_compare($version, $latestVersion) < 0 || count($messageSuggested) > 1) {
       if (version_compare($version, $latestVersion) < 0) {
-        $message[$latestVersion] = 'Drupal upgrade to ' . $latestVersion . ' (' .
+        $message[$latestVersion] = $projectLabel . ' upgrade to ' . $latestVersion .
+          ' (' .
           date('Y-M-d', $available['releases'][$latestVersion]['date']) . ' ).';
         if (!$isSecurityRelease) {
           $severity = 'warning';
@@ -162,6 +163,13 @@ class CRM_Siteinfo_DrupalVersionCheck {
     return $projectStatus;
   }
 
+  /**
+   * Get Recommended Version.
+   *
+   * @param $version
+   * @param $versionListDetail
+   * @return array
+   */
   public function getMoreRecommendedVersion($version, $versionListDetail) {
     $versionNumberInt = intval($version);
     unset($versionListDetail[$versionNumberInt]);
@@ -265,15 +273,16 @@ class CRM_Siteinfo_DrupalVersionCheck {
   /**
    * Function to build current project details.
    *
+   * @param string $project
    * @param $version
    * @return array
    */
-  public function currentProject($version) {
-    $projects['drupal'] = [
-      'name' => 'drupal',
+  public function currentProject($project = 'drupal', $version) {
+    $projects[$project] = [
+      'name' => $project,
       // Only save attributes from the .info file we care about so we do not
       // bloat our RAM usage needlessly.
-      'project_type' => 'core',
+      'project_type' => ($project == 'drupal') ? 'core' : 'other',
       'project_status' => TRUE,
     ];
 
@@ -309,9 +318,9 @@ class CRM_Siteinfo_DrupalVersionCheck {
     }
 
     // Finally, save the results we care about into the $projects array.
-    $projects['drupal']['existing_version'] = $version;
-    $projects['drupal']['existing_major'] = $info['major'];
-    $projects['drupal']['install_type'] = $install_type;
+    $projects[$project]['existing_version'] = $version;
+    $projects[$project]['existing_major'] = $info['major'];
+    $projects[$project]['install_type'] = $install_type;
 
     return $projects;
   }

@@ -98,27 +98,29 @@ class CRM_Siteinfo_DrupalVersionCheck {
     $isSecurityRelease = FALSE;
     $severity = 'info';
     $message = [];
-    foreach ($projects[$project]['security updates'] as $securityupdate) {
-      //echo '<pre> $securityupdate: ';print_r($securityupdate);echo '</pre>';
-      if (version_compare($version, $securityupdate['version']) < 0) {
-        /*
-        echo '<pre>intval version_patch: ';print_r(intval($securityupdate['version_patch']));echo '</pre>';
-        echo '<pre>intval $version: ';print_r(intval($available['releases'][$version]['version_patch']));echo '</pre>';
-        */
-        $message[$securityupdate['version']] = PHP_EOL . 'Security update ' . $securityupdate['version']
-          . ' (' . date('Y-M-d', $securityupdate['date']) . ' )';
-        if (in_array($drupalType, ['Drupal8', 'Drupal9'])) {
-          // If Version is 9.4.3, then version_patch = 94.3
-          // security only be check withing same range like 9.4.3 -> 9.4.4 ->
-          // 9.4.5
-          if (version_compare(intval($securityupdate['version_patch']), intval
-          ($available['releases'][$version]['version_patch']), '>')) {
-            //echo '<pre>intval $version: ';echo 'Skipping-----';echo '</pre>';
-            continue;
+    if (array_key_exists('security updates', $projects[$project])) {
+      foreach ($projects[$project]['security updates'] as $securityupdate) {
+        //echo '<pre> $securityupdate: ';print_r($securityupdate);echo '</pre>';
+        if (version_compare($version, $securityupdate['version']) < 0) {
+          /*
+          echo '<pre>intval version_patch: ';print_r(intval($securityupdate['version_patch']));echo '</pre>';
+          echo '<pre>intval $version: ';print_r(intval($available['releases'][$version]['version_patch']));echo '</pre>';
+          */
+          $message[$securityupdate['version']] = PHP_EOL . 'Security update ' . $securityupdate['version']
+            . ' (' . date('Y-M-d', $securityupdate['date']) . ' )';
+          if (in_array($drupalType, ['Drupal8', 'Drupal9'])) {
+            // If Version is 9.4.3, then version_patch = 94.3
+            // security only be check withing same range like 9.4.3 -> 9.4.4 ->
+            // 9.4.5
+            if (version_compare(intval($securityupdate['version_patch']), intval
+            ($available['releases'][$version]['version_patch']), '>')) {
+              //echo '<pre>intval $version: ';echo 'Skipping-----';echo '</pre>';
+              continue;
+            }
           }
+          $isSecurityRelease = TRUE;
+          $severity = 'error';
         }
-        $isSecurityRelease = TRUE;
-        $severity = 'error';
       }
     }
     $suggestedVersions = $this->getMoreRecommendedVersion($version,
@@ -461,6 +463,13 @@ class CRM_Siteinfo_DrupalVersionCheck {
       return;
     }
     foreach ($available['releases'] as $version => $release) {
+      // for drupal core only check stable version.
+      if ($project_data['name'] == 'drupal') {
+        if ((strpos($version, '-beta') !== FALSE) ||
+          (strpos($version, '-alpha') !== FALSE)) {
+          continue;
+        }
+      }
       // First, if this is the existing release, check a few conditions.
       if ($project_data['existing_version'] === $version) {
         if (isset($release['terms']['Release type']) &&

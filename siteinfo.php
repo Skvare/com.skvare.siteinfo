@@ -183,4 +183,9 @@ function siteinfo_civicrm_navigationMenu(&$menu) {
   ]);
   _siteinfo_civix_navigationMenu($menu);
 }
-
+/**
+ * Implements hook_civicrm_idsException().
+ */
+function siteinfo_civicrm_idsException( &$skip ) {
+  $skip[] = 'civicrm/siteinfo/status';
+}

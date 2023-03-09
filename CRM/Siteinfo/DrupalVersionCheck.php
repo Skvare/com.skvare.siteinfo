@@ -78,22 +78,27 @@ class CRM_Siteinfo_DrupalVersionCheck {
     }
     $xml = $this->getXmlFromUrl($url);
     $available = $this->updateParseXml($xml);
-    $versionList = array_keys($available['releases']);
+    $versionList = [];
+    if (!empty($available['releases'])) {
+      $versionList = array_keys($available['releases']);
+    }
     $versionListDetail = [];
-    foreach ($versionList as $versionNumber) {
-      $versionNumberInt = intval($versionNumber);
-      if (!array_key_exists($versionNumberInt, $versionListDetail)) {
-        $versionListDetail[$versionNumberInt] = [];
+    if (!empty($versionList)) {
+      foreach ($versionList as $versionNumber) {
+        $versionNumberInt = intval($versionNumber);
+        if (!array_key_exists($versionNumberInt, $versionListDetail)) {
+          $versionListDetail[$versionNumberInt] = [];
+        }
+        $versionListDetail[$versionNumberInt][] = $versionNumber;
       }
-      $versionListDetail[$versionNumberInt][] = $versionNumber;
     }
     $this->calculateProjectUpdateStatus($projects[$project], $available);
     //echo '<pre>-----'; print_r($projects); echo '</pre>';
     if (in_array($drupalType, ['Drupal8', 'Drupal9'])) {
-      $latestVersion = $projects[$project]['latest_version'];
+      $latestVersion = @ $projects[$project]['latest_version'];
     }
     else {
-      $latestVersion = $projects[$project]['latest_version'];
+      $latestVersion = @ $projects[$project]['latest_version'];
     }
     $isSecurityRelease = FALSE;
     $severity = 'info';
@@ -176,9 +181,11 @@ class CRM_Siteinfo_DrupalVersionCheck {
     $versionNumberInt = intval($version);
     unset($versionListDetail[$versionNumberInt]);
     $recommendedVersion = [];
-    foreach ($versionListDetail as $primaryVersion => $versionList) {
-      if ($primaryVersion > $versionNumberInt) {
-        $recommendedVersion[] = $versionList[0];
+    if (!empty($versionListDetail)) {
+      foreach ($versionListDetail as $primaryVersion => $versionList) {
+        if ($primaryVersion > $versionNumberInt) {
+          $recommendedVersion[] = $versionList[0];
+        }
       }
     }
 
@@ -666,5 +673,151 @@ class CRM_Siteinfo_DrupalVersionCheck {
         $project_data['status'] = self::UPDATE_UNKNOWN;
         $project_data['reason'] = E::ts('Invalid info');
     }
+  }
+
+  /**
+   * Function get package version.
+   *
+   * @param $name
+   * @return string
+   */
+  public static function getExactVersion($name) {
+    $composerJsonFile = DRUPAL_ROOT . '/../composer.lock';
+    if (file_exists($composerJsonFile)) {
+      try {
+        $composerInfo = new ComposerLockParser\ComposerInfo($composerJsonFile);
+        $packageDetail = $composerInfo->getPackages()->getByName($name);
+
+        return $packageDetail->getVersion();
+      }
+      catch (\Exception $e) {
+      }
+    }
+    return '';
+  }
+
+
+  /**
+   * Function to get drupal 7 update and system status.
+   *
+   * @return array
+   */
+  public static function drupal7Update() {
+    module_load_install('update');
+    module_load_install('system');
+    $updateStatus = update_requirements('runtime');
+    $systemStatus = system_requirements('runtime');
+    $reportStatus = array_merge($updateStatus, $systemStatus);
+
+    return $reportStatus;
+  }
+
+  /**
+   * Function to get drupal 9 update and system status.
+   *
+   * @return array
+   */
+  public static function drupal9Update() {
+    \Drupal::moduleHandler()->loadInclude('system', 'install');
+    \Drupal::moduleHandler()->loadInclude('update', 'install');
+    $status = update_requirements('runtime');
+    foreach (['core', 'contrib'] as $report_type) {
+      $type = 'update_' . $report_type;
+      if (isset($status[$type]['description']) && is_array($status[$type]['description'])) {
+        $status[$type]['description'] = \Drupal::service('renderer')->renderPlain($status[$type]['description']);
+      }
+    }
+    $status = json_encode($status, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+    $reportStatus = json_decode($status, TRUE);
+
+    $cron_config = \Drupal::config('system.cron');
+    // Cron warning threshold defaults to two days.
+    $threshold_warning = $cron_config->get('threshold.requirements_warning');
+    // Cron error threshold defaults to two weeks.
+    $threshold_error = $cron_config->get('threshold.requirements_error');
+
+    // Determine when cron last ran.
+    $cron_last = \Drupal::state()->get('system.cron_last');
+    if (!is_numeric($cron_last)) {
+      $cron_last = \Drupal::state()->get('install_time', 0);
+    }
+
+    // Determine severity based on time since cron last ran.
+    $severity = REQUIREMENT_INFO;
+    $request_time = \Drupal::time()->getRequestTime();
+    if ($request_time - $cron_last > $threshold_error) {
+      $severity = REQUIREMENT_ERROR;
+    }
+    elseif ($request_time - $cron_last > $threshold_warning) {
+      $severity = REQUIREMENT_WARNING;
+    }
+
+    // Set summary and description based on values determined above.
+    $summary = ts('Last run %1 ago', ['1' => \Drupal::service('date.formatter')->formatTimeDiffSince($cron_last)]);
+
+    $reportStatus['cron'] = [
+      'title' => 'Cron maintenance tasks',
+      'severity' => self::getSeverity($severity),
+      'value' => $summary,
+    ];
+
+
+    $reportStatus['update'] = [
+      'title' => 'Database updates',
+      'value' => 'Up to date',
+    ];
+
+    // Check installed modules.
+    $has_pending_updates = FALSE;
+    /** @var \Drupal\Core\Update\UpdateHookRegistry $update_registry */
+    $update_registry = \Drupal::service('update.update_hook_registry');
+    foreach (\Drupal::moduleHandler()->getModuleList() as $module => $filename) {
+      $updates = $update_registry->getAvailableUpdates($module);
+      if ($updates) {
+        $default = $update_registry->getInstalledVersion($module);
+        if (max($updates) > $default) {
+          $has_pending_updates = TRUE;
+          break;
+        }
+      }
+    }
+    if (!$has_pending_updates) {
+      /** @var \Drupal\Core\Update\UpdateRegistry $post_update_registry */
+      $post_update_registry = \Drupal::service('update.post_update_registry');
+      $missing_post_update_functions = $post_update_registry->getPendingUpdateFunctions();
+      if (!empty($missing_post_update_functions)) {
+        $has_pending_updates = TRUE;
+      }
+    }
+
+    if ($has_pending_updates) {
+      $reportStatus['update']['severity'] = REQUIREMENT_ERROR;
+      $reportStatus['update']['value'] = 'Out of date';
+    }
+    /*
+    $reportStatus = system_requirements('runtime');
+    $reportStatus = json_encode($reportStatus, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+    $reportStatus = json_decode($reportStatus, TRUE);
+    $reportStatus = array_merge($status_core_and_module, $reportStatus);
+    */
+
+    return $reportStatus;
+  }
+
+  /**
+   * Function to get class name from Severity level.
+   *
+   * @param $level
+   * @return string
+   */
+  public static function getSeverity($level) {
+    $levelInfo = [
+      '0' => 'info',
+      '1' => 'warning',
+      '2' => 'error',
+      '-1' => 'info',
+    ];
+
+    return $levelInfo[$level] ?? 'info';
   }
 }

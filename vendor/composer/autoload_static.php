@@ -20,6 +20,16 @@ class ComposerStaticInitd01d05df91262c0006704cee8bc1dd19
         ),
     );
 
+    public static $prefixesPsr0 = array (
+        'C' => 
+        array (
+            'ComposerLockParser\\' => 
+            array (
+                0 => __DIR__ . '/..' . '/t4web/composer-lock-parser/src',
+            ),
+        ),
+    );
+
     public static $classMap = array (
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
     );
@@ -29,6 +39,7 @@ class ComposerStaticInitd01d05df91262c0006704cee8bc1dd19
         return \Closure::bind(function () use ($loader) {
             $loader->prefixLengthsPsr4 = ComposerStaticInitd01d05df91262c0006704cee8bc1dd19::$prefixLengthsPsr4;
             $loader->prefixDirsPsr4 = ComposerStaticInitd01d05df91262c0006704cee8bc1dd19::$prefixDirsPsr4;
+            $loader->prefixesPsr0 = ComposerStaticInitd01d05df91262c0006704cee8bc1dd19::$prefixesPsr0;
             $loader->classMap = ComposerStaticInitd01d05df91262c0006704cee8bc1dd19::$classMap;
 
         }, null, ClassLoader::class);

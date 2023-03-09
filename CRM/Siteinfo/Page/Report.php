@@ -26,18 +26,13 @@ class CRM_Siteinfo_Page_Report extends CRM_Core_Page {
     $projects = $outputArray = [];
     CRM_Utils_System::setTitle(E::ts('Status Report'));
     if (!$isError) {
+      $drupalStatus = [];
       if (CIVICRM_UF == 'Drupal8') {
-        $projects = \Drupal::service('update.manager')->getProjects();
-        unset($projects['drupal'], $projects['civicrm']);
-
+        $drupalStatus = CRM_Siteinfo_DrupalVersionCheck::drupal9Update();
       }
       else {
-        $module_data = system_rebuild_module_data();
-        require_once 'modules/update/update.compare.inc';
-        _update_process_info_list($projects, $module_data, 'module', TRUE);
-        unset($projects['drupal'], $projects['civicrm']);
+        $drupalStatus = CRM_Siteinfo_DrupalVersionCheck::drupal7Update();
       }
-      $drupalContribModule = [];
       $outputArray['cmsModules'] = [
         'name' => 'cmsModules',
         'message' => '',
@@ -45,23 +40,20 @@ class CRM_Siteinfo_Page_Report extends CRM_Core_Page {
         'severity' => 'info',
         'title' => 'Modules',
       ];
-      $drupalContribModuleSeverity = 'info';
-      foreach ($projects as $project) {
-        $versionInfo = new CRM_Siteinfo_DrupalVersionCheck();
-        $projectStatus = $versionInfo->checkVersion($project['name'], $project['info']['name'],CIVICRM_UF, $project['info']['version']);
-        if ($projectStatus['isUpgradeRequire'] && !empty($projectStatus['message'])) {
-          $drupalContribModule[$project['name']] = $projectStatus['message'];
-          if ($drupalContribModuleSeverity != 'error') {
-            $drupalContribModuleSeverity = 'warning';
-          }
-        }
-        if ($projectStatus['isSecurityRelease']) {
-          $drupalContribModuleSeverity = 'error';
-        }
+      if (!empty($drupalStatus['update_contrib'])) {
+        $outputArray['cmsModules']['severity'] =
+          CRM_Siteinfo_DrupalVersionCheck::getSeverity($drupalStatus['update_contrib']['severity']);
+        $outputArray['cmsModules']['message'] = strip_tags($drupalStatus['update_contrib']['value']);
       }
-      if (!empty($drupalContribModule)) {
-        $outputArray['cmsModules']['severity'] = $drupalContribModuleSeverity;
-        $outputArray['cmsModules']['message'] = implode(",\n", $drupalContribModule);
+      foreach (['cron' => 'Drpual_Cron', 'update' => 'Drupal_Database_updates'] as $statusType => $statusTypeLabel)
+      if (!empty($drupalStatus[$statusType])) {
+        $outputArray[$statusTypeLabel] = [
+          'name' => $statusTypeLabel,
+          'message' => strip_tags($drupalStatus[$statusType]['title']),
+          'level' => 1,
+          'severity' => CRM_Siteinfo_DrupalVersionCheck::getSeverity($drupalStatus[$statusType]['severity']),
+          'title' => strip_tags($drupalStatus[$statusType]['value']),
+        ];
       }
       // Get the System Status details.
       $output = CRM_Utils_Check::checkStatus();
@@ -99,6 +91,16 @@ class CRM_Siteinfo_Page_Report extends CRM_Core_Page {
         'level' => 1,
         'severity' => 'info',
       ];
+      if (CIVICRM_UF == 'Drupal8') {
+        $exactCiviCoreVersion = CRM_Siteinfo_DrupalVersionCheck::getExactVersion('civicrm/civicrm-core');
+        $exactCiviModuleVersion = CRM_Siteinfo_DrupalVersionCheck::getExactVersion('civicrm/civicrm-drupal-8');
+        if (!empty($exactCiviModuleVersion)) {
+          $outputArray['civicrmCodeVersion']['message'] = 'CiviCRM Module Tag : ' . $exactCiviModuleVersion;
+        }
+        if (!empty($exactCiviCoreVersion)) {
+          $outputArray['civicrmCodeVersion']['title'] .= ' (Tag: ' . $exactCiviCoreVersion . ')';
+        }
+      }
       $outputArray['civicrmDbVersion'] = [
         'name' => 'civicrmDbVersion',
         'message' => '',

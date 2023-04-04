@@ -96,9 +96,11 @@ class CRM_Siteinfo_Page_Report extends CRM_Core_Page {
         $exactCiviModuleVersion = CRM_Siteinfo_DrupalVersionCheck::getExactVersion('civicrm/civicrm-drupal-8');
         if (!empty($exactCiviModuleVersion)) {
           $outputArray['civicrmCodeVersion']['message'] = 'CiviCRM Module Tag : ' . $exactCiviModuleVersion;
+          $outputArray['civicrmCodeVersion']['civicrm_module_tag'] = $exactCiviModuleVersion;
         }
         if (!empty($exactCiviCoreVersion)) {
           $outputArray['civicrmCodeVersion']['title'] .= ' (Tag: ' . $exactCiviCoreVersion . ')';
+          $outputArray['civicrmCodeVersion']['civicrm_core_tag'] = $exactCiviCoreVersion;
         }
       }
       $outputArray['civicrmDbVersion'] = [

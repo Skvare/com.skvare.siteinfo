@@ -151,12 +151,11 @@ class CRM_Siteinfo_Page_Report extends CRM_Core_Page {
         }
       }
       */
-
-      $config = parse_url(CIVICRM_DSN);
+      $configDbCiviCRM = parse_url(CIVICRM_DSN);
       $outputArray['dbServer'] = [
         'name' => 'dbServer',
         'message' => '',
-        'title' => $config['host'],
+        'title' => $configDbCiviCRM['host'],
         'level' => 1,
         'severity' => 'info',
       ];
@@ -168,9 +167,43 @@ class CRM_Siteinfo_Page_Report extends CRM_Core_Page {
         'level' => 1,
         'severity' => 'info',
       ];
+
+      foreach (['dbCMS' => CIVICRM_UF_DSN, 'dbCiviCRM' => CIVICRM_DSN] as $dbKey => $db_connection) {
+        $date = self::getDbDate($db_connection);
+        if (!empty($date)) {
+          $outputArray[$dbKey] = [
+            'name' => $dbKey,
+            'message' => $date,
+            'title' => date('Y-m-d', strtotime($date)),
+            'level' => 1,
+            'severity' => 'info',
+          ];
+        }
+      }
     }
     CRM_Utils_JSON::output($outputArray);
     CRM_Utils_System::civiExit();
+  }
+
+  /**
+   * Function to get Datbase Create Date Time.
+   *
+   * @param $db_connection
+   * @return string|null
+   * @throws CRM_Core_Exception
+   */
+  public static function getDbDate($db_connection) {
+    try {
+      $dbConfig = parse_url($db_connection);
+      $dbName = trim($dbConfig['path'], '/');
+      $sqlParams[1] = [$dbName, 'String'];
+      $sql = "SELECT MIN(create_time) AS Creation_Time FROM information_schema.tables WHERE table_schema = %1 Group by table_schema";
+
+      return CRM_Core_DAO::singleValueQuery($sql, $sqlParams);
+    }
+    catch (\Exception $e) {
+      return '';
+    }
   }
 
   /**

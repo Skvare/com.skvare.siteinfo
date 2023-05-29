@@ -66,7 +66,7 @@ class CRM_Siteinfo_DrupalVersionCheck {
    * @param $version
    * @return array
    */
-  function checkVersion($project = 'drupal', $projectLabel = '', $drupalType, $version) {
+  function checkVersion($project = 'drupal', $projectLabel = '', $drupalType = '', $version = '') {
     // Build current project details
     $projects = $this->currentProject($project, $version);
     // get the xml details for release details.
@@ -286,7 +286,7 @@ class CRM_Siteinfo_DrupalVersionCheck {
    * @param $version
    * @return array
    */
-  public function currentProject($project = 'drupal', $version) {
+  public function currentProject($project = 'drupal', $version = '') {
     $projects[$project] = [
       'name' => $project,
       // Only save attributes from the .info file we care about so we do not

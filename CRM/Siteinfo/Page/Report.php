@@ -45,15 +45,16 @@ class CRM_Siteinfo_Page_Report extends CRM_Core_Page {
           CRM_Siteinfo_DrupalVersionCheck::getSeverity($drupalStatus['update_contrib']['severity']);
         $outputArray['cmsModules']['message'] = strip_tags($drupalStatus['update_contrib']['value']);
       }
-      foreach (['cron' => 'Drpual_Cron', 'update' => 'Drupal_Database_updates'] as $statusType => $statusTypeLabel)
-      if (!empty($drupalStatus[$statusType])) {
-        $outputArray[$statusTypeLabel] = [
-          'name' => $statusTypeLabel,
-          'message' => strip_tags($drupalStatus[$statusType]['title']),
-          'level' => 1,
-          'severity' => CRM_Siteinfo_DrupalVersionCheck::getSeverity($drupalStatus[$statusType]['severity']),
-          'title' => strip_tags($drupalStatus[$statusType]['value']),
-        ];
+      foreach (['cron' => 'Drpual_Cron', 'update' => 'Drupal_Database_updates'] as $statusType => $statusTypeLabel) {
+        if (!empty($drupalStatus[$statusType])) {
+          $outputArray[$statusTypeLabel] = [
+            'name' => $statusTypeLabel,
+            'message' => strip_tags($drupalStatus[$statusType]['title']),
+            'level' => 1,
+            'severity' => CRM_Siteinfo_DrupalVersionCheck::getSeverity($drupalStatus[$statusType]['severity']),
+            'title' => strip_tags($drupalStatus[$statusType]['value']),
+          ];
+        }
       }
       // Get the System Status details.
       $output = CRM_Utils_Check::checkStatus();
@@ -139,7 +140,7 @@ class CRM_Siteinfo_Page_Report extends CRM_Core_Page {
         $outputArray['cmsVersion']['title'] = 'NA';
       }
       $versionInfo = new CRM_Siteinfo_DrupalVersionCheck();
-      $projectStatus = $versionInfo->checkVersion('drupal', 'Drupal',CIVICRM_UF, $outputArray['cmsVersion']['title']);
+      $projectStatus = $versionInfo->checkVersion('drupal', 'Drupal', CIVICRM_UF, $outputArray['cmsVersion']['title']);
       $outputArray['cmsVersion']['message'] = $projectStatus['message'];
       $outputArray['cmsVersion']['severity'] = $projectStatus['severity'];
       /*
@@ -150,6 +151,23 @@ class CRM_Siteinfo_Page_Report extends CRM_Core_Page {
         }
       }
       */
+
+      $config = parse_url(CIVICRM_DSN);
+      $outputArray['dbServer'] = [
+        'name' => 'dbServer',
+        'message' => '',
+        'title' => $config['host'],
+        'level' => 1,
+        'severity' => 'info',
+      ];
+
+      $outputArray['linuxServer'] = [
+        'name' => 'linuxServer',
+        'message' => '',
+        'title' => gethostname(),
+        'level' => 1,
+        'severity' => 'info',
+      ];
     }
     CRM_Utils_JSON::output($outputArray);
     CRM_Utils_System::civiExit();

@@ -765,6 +765,7 @@ class CRM_Siteinfo_DrupalVersionCheck {
     $reportStatus['update'] = [
       'title' => 'Database updates',
       'value' => 'Up to date',
+      'severity' => 'info',
     ];
 
     // Check installed modules.

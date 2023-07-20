@@ -79,7 +79,7 @@ class CRM_Siteinfo_DrupalVersionCheck {
     $xml = $this->getXmlFromUrl($url);
     $available = $this->updateParseXml($xml);
     $versionList = [];
-    if (!empty($available['releases'])) {
+    if (array_key_exists('releases', $available) && !empty($available['releases'])) {
       $versionList = array_keys($available['releases']);
     }
     $versionListDetail = [];

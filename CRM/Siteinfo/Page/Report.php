@@ -19,7 +19,7 @@ class CRM_Siteinfo_Page_Report extends CRM_Core_Page {
         $isError = TRUE;
       }
       $now = new DateTimeImmutable();
-      if ($token->nbf > $now->getTimestamp() || $token->exp < $now->getTimestamp()) {
+      if (!$isError && ($token->nbf > $now->getTimestamp() || $token->exp < $now->getTimestamp())) {
         $isError = TRUE;
       }
     }

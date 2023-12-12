@@ -1,15 +1,14 @@
 # com.skvare.siteinfo
 
-![Screenshot](/images/screenshot.png)
+![Screenshot](/images/siteinfo_setting.png)
 
-(*FIXME: In one or two paragraphs, describe what the extension does and why one would download it. *)
-
-The extension is licensed under [AGPL-3.0](LICENSE.txt).
+This extension allow to Collect System Status information in json format.
+Information contain CiviCRM and Drupal 7, 8, 9, 10.
 
 ## Requirements
 
 * PHP v7.2+
-* CiviCRM (*FIXME: Version number*)
+* CiviCRM
 
 ## Installation (Web UI)
 
@@ -22,7 +21,7 @@ install it with the command-line tool [cv](https://github.com/civicrm/cv).
 
 ```bash
 cd <extension-dir>
-cv dl com.skvare.siteinfo@https://github.com/FIXME/com.skvare.siteinfo/archive/master.zip
+cv dl com.skvare.siteinfo@https://github.com/skvare/com.skvare.siteinfo/archive/master.zip
 ```
 
 ## Installation (CLI, Git)
@@ -31,14 +30,15 @@ Sysadmins and developers may clone the [Git](https://en.wikipedia.org/wiki/Git) 
 install it with the command-line tool [cv](https://github.com/civicrm/cv).
 
 ```bash
-git clone https://github.com/FIXME/com.skvare.siteinfo.git
+git clone https://github.com/skvare/com.skvare.siteinfo.git
 cv en siteinfo
 ```
 
 ## Getting Started
 
-(* FIXME: Where would a new user navigate to get started? What changes would they see? *)
+This extension required a centralized system that collects all sites.
+information with different environments (development, staging, and production).
 
-## Known Issues
+Store the data in the database and prepare the report per environment. This report, Repository, is available at: https://git.skvare.com/Core/sites-report-status
 
-(* FIXME *)
+![Screenshot](/images/siteinfo_dashabord.png)

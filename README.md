@@ -5,6 +5,8 @@
 This extension allow to Collect System Status information in json format.
 Information contain CiviCRM and Drupal 7, 8, 9, 10.
 
+Setting page access through the menu - `Site Info Setting`, (/civicrm/siteinfo/setting?reset=1)
+
 ## Requirements
 
 * PHP v7.2+

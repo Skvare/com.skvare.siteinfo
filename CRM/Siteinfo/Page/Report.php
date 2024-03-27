@@ -12,7 +12,8 @@ class CRM_Siteinfo_Page_Report extends CRM_Core_Page {
     $geSettings = self::getSettings();
     if (!empty($geSettings['siteinfo_secret']) && !empty($_REQUEST['jwt'])) {
       try {
-        $token = JWT::decode($_REQUEST['jwt'], $geSettings['siteinfo_secret'], ['HS512']);
+        $algs = ['HS512'];
+        $token = JWT::decode($_REQUEST['jwt'], $geSettings['siteinfo_secret'], $algs);
         $isError = FALSE;
       }
       catch (Exception $exception) {

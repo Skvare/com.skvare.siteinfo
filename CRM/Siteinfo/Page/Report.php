@@ -2,6 +2,7 @@
 require_once  __DIR__ . '/../../../vendor/autoload.php';
 use CRM_Siteinfo_ExtensionUtil as E;
 use \Firebase\JWT\JWT;
+use \Firebase\JWT\Key;
 
 
 class CRM_Siteinfo_Page_Report extends CRM_Core_Page {
@@ -9,11 +10,17 @@ class CRM_Siteinfo_Page_Report extends CRM_Core_Page {
   public function run() {
     CRM_Utils_Request::retrieve('jwt', 'String', $this, FALSE);
     $isError = TRUE;
-    $geSettings = self::getSettings();
-    if (!empty($geSettings['siteinfo_secret']) && !empty($_REQUEST['jwt'])) {
+    $getSettings = self::getSettings();
+    if (!empty($getSettings['siteinfo_secret']) && !empty($_REQUEST['jwt'])) {
       try {
-        $algs = ['HS512'];
-        $token = JWT::decode($_REQUEST['jwt'], $geSettings['siteinfo_secret'], $algs);
+        $currentVer = CRM_Core_BAO_Domain::version(TRUE);
+        if (version_compare($currentVer, '5.69.0') < 0) {
+          $algs = ['HS512'];
+          $token = JWT::decode($_REQUEST['jwt'], $getSettings['siteinfo_secret'], $algs);
+        }
+        else {
+          $token = JWT::decode($_REQUEST['jwt'], new Key($getSettings['siteinfo_secret'], 'HS512'));
+        }
         $isError = FALSE;
       }
       catch (Exception $exception) {

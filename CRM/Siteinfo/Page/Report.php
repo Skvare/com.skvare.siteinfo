@@ -38,7 +38,7 @@ class CRM_Siteinfo_Page_Report extends CRM_Core_Page {
       if (CIVICRM_UF == 'Drupal8') {
         $drupalStatus = CRM_Siteinfo_DrupalVersionCheck::drupal9Update();
       }
-      else {
+      elseif (CIVICRM_UF == 'Drupal') {
         $drupalStatus = CRM_Siteinfo_DrupalVersionCheck::drupal7Update();
       }
       $outputArray['cmsModules'] = [
@@ -53,7 +53,7 @@ class CRM_Siteinfo_Page_Report extends CRM_Core_Page {
           CRM_Siteinfo_DrupalVersionCheck::getSeverity($drupalStatus['update_contrib']['severity']);
         $outputArray['cmsModules']['message'] = strip_tags($drupalStatus['update_contrib']['value']);
       }
-      foreach (['cron' => 'Drpual_Cron', 'update' => 'Drupal_Database_updates'] as $statusType => $statusTypeLabel) {
+      foreach (['cron' => 'Drupal_Cron', 'update' => 'Drupal_Database_updates'] as $statusType => $statusTypeLabel) {
         if (!empty($drupalStatus[$statusType])) {
           $outputArray[$statusTypeLabel] = [
             'name' => $statusTypeLabel,
@@ -66,19 +66,19 @@ class CRM_Siteinfo_Page_Report extends CRM_Core_Page {
       }
       // Get the System Status details.
       $output = CRM_Utils_Check::checkStatus();
-      foreach ($output as $messageObje) {
-        $msg = $messageObje->getMessage();
+      foreach ($output as $messageObject) {
+        $msg = $messageObject->getMessage();
         if (!empty($msg)) {
           $msg = strip_tags($msg);
           $msg = htmlentities($msg);
           $msg = addslashes($msg);
         }
-        $outputArray[$messageObje->getName()] = [
-          'name' => $messageObje->getName(),
+        $outputArray[$messageObject->getName()] = [
+          'name' => $messageObject->getName(),
           'message' => $msg,
-          'title' => $messageObje->getTitle(),
-          'level' => $messageObje->getLevel(),
-          'severity' => $messageObje->getSeverity(),
+          'title' => $messageObject->getTitle(),
+          'level' => $messageObject->getLevel(),
+          'severity' => $messageObject->getSeverity(),
         ];
       }
       // get CMS type
@@ -144,13 +144,35 @@ class CRM_Siteinfo_Page_Report extends CRM_Core_Page {
         $outputArray['cmsVersion']['title'] = \Drupal::VERSION;
         $outputArray['cmsType']['title'] = 'Drupal-' . intval(\Drupal::VERSION);
       }
+      elseif (CIVICRM_UF == 'WordPress') {
+        global $wp_version;
+        $outputArray['cmsVersion']['title'] = $wp_version;
+        $outputArray['cmsType']['title'] = 'WordPress-' . intval($wp_version);
+
+        $config = CRM_Core_Config::singleton();
+        $cmsRoot = $config->userSystem->cmsRootPath();
+        require_once $cmsRoot . '/wp-admin/includes/update.php';
+        $updates = get_preferred_from_update_core();
+        if ($updates->response == 'latest') {
+          $outputArray['cmsVersion']['severity'] = 'info';
+          $outputArray['cmsVersion']['level'] = 0;
+          $outputArray['cmsVersion']['message'] = 'Your are on latest version';
+        }
+        else {
+          $outputArray['cmsVersion']['severity'] = 'warning';
+          $outputArray['cmsVersion']['level'] = 1;
+          $outputArray['cmsVersion']['message'] = 'Upgrade to ' . $updates->version;
+        }
+      }
       else {
         $outputArray['cmsVersion']['title'] = 'NA';
       }
-      $versionInfo = new CRM_Siteinfo_DrupalVersionCheck();
-      $projectStatus = $versionInfo->checkVersion('drupal', 'Drupal', CIVICRM_UF, $outputArray['cmsVersion']['title']);
-      $outputArray['cmsVersion']['message'] = $projectStatus['message'];
-      $outputArray['cmsVersion']['severity'] = $projectStatus['severity'];
+      if (in_array(CIVICRM_UF, ['Drupal', 'Drupal8'])) {
+        $versionInfo = new CRM_Siteinfo_DrupalVersionCheck();
+        $projectStatus = $versionInfo->checkVersion('drupal', 'Drupal', CIVICRM_UF, $outputArray['cmsVersion']['title']);
+        $outputArray['cmsVersion']['message'] = $projectStatus['message'];
+        $outputArray['cmsVersion']['severity'] = $projectStatus['severity'];
+      }
       /*
       if ($projectStatus['isUpgradeRequire']) {
         $outputArray['cmsVersion']['severity'] = 'warning';

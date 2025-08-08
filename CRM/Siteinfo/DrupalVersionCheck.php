@@ -720,7 +720,12 @@ class CRM_Siteinfo_DrupalVersionCheck {
   public static function drupal9Update() {
     \Drupal::moduleHandler()->loadInclude('system', 'install');
     \Drupal::moduleHandler()->loadInclude('update', 'install');
-    $status = update_requirements('runtime');
+    if (function_exists('update_requirements')) {
+      $status = update_requirements('runtime');
+    }
+    else {
+      $status = \Drupal::moduleHandler()->invoke('update', 'runtime_requirements');
+    }
     foreach (['core', 'contrib'] as $report_type) {
       $type = 'update_' . $report_type;
       if (isset($status[$type]['description']) && is_array($status[$type]['description'])) {

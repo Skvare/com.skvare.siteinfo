@@ -4,7 +4,6 @@ use CRM_Siteinfo_ExtensionUtil as E;
 use \Firebase\JWT\JWT;
 use \Firebase\JWT\Key;
 
-
 class CRM_Siteinfo_Page_Report extends CRM_Core_Page {
 
   public function run() {
@@ -163,6 +162,10 @@ class CRM_Siteinfo_Page_Report extends CRM_Core_Page {
           $outputArray['cmsVersion']['level'] = 1;
           $outputArray['cmsVersion']['message'] = 'Upgrade to ' . $updates->version;
         }
+      }
+      elseif (CIVICRM_UF == 'Joomla') {
+        $config = CRM_Core_Config::singleton();
+        $outputArray['cmsVersion']['title'] = $config->userSystem->getVersion();
       }
       else {
         $outputArray['cmsVersion']['title'] = 'NA';
